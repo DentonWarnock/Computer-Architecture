@@ -32,7 +32,14 @@ class CPU:
         for instruction in program:
             self.ram[address] = instruction
             address += 1
+            
+    def ram_read(self, pc):
+        print(self.ram[self.pc])
+        self.pc += 1
 
+    def ram_write(self, pc, value):
+        self.ram[self.pc] = value
+        self.pc += 2
 
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
