@@ -11,13 +11,14 @@ class CPU:
         """Construct a new CPU."""
         self.reg = [0] * 8
         self.ram = [0] * 256
-        self.pc = 0
+        self.pc = 0 # Program Counter, address of the currently executing instruction
         self.running = True
         self.instruction = {
             "HLT" : 0b00000001,
             "LDI" : 0b10000010,
             "PRN" : 0b01000111,
             'MUL' : 0b10100010,
+            'SUB' : 0b10100011,
         }
 
     def load(self):
@@ -43,9 +44,9 @@ class CPU:
         except FileNotFoundError:
             print(f"could not find file {sys.argv[1]}")
             
-    def ram_read(self, address):
+    def ram_read(self, op):
         # print(self.ram[address])
-        return self.ram[address]      
+        return self.ram[op]      
         
 
     def ram_write(self, value, address):
@@ -57,9 +58,13 @@ class CPU:
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
-        #elif op == "SUB": etc
+            
+        elif op == "SUB":
+            self.reg[reg_a] -= self.reg[reg_b]
+            
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
+            
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -87,19 +92,18 @@ class CPU:
         """Run the CPU."""
         while self.running:
         
-            # Internal Register
+            # Instruction Register, contains a copy of the currently executing instruction
             IR = self.ram[self.pc]
             
             operand_a = self.ram_read(self.pc + 1)
             operand_b = self.ram_read(self.pc + 2)
             
-            # load data
+            # load data into register
             if IR == self.instruction['LDI']:
-                # do something
                 self.reg[operand_a] = operand_b
                 self.pc += 2
             
-            # print register number
+            # print data from register
             elif IR == self.instruction['PRN']:
                 print(self.reg[operand_a])
                 self.pc += 1
@@ -107,8 +111,12 @@ class CPU:
             elif IR == self.instruction['MUL']:
                 self.alu('MUL', operand_a, operand_b)
                 self.pc += 2
+                
+            elif IR == self.instruction['SUB']:
+                self.alu('SUB', operand_a, operand_b)
+                self.pc += 2
             
-            # Halt operation or exit()
+            # Halt operation or stop loop
             elif IR == self.instruction['HLT']:
                 self.running = False
                 
