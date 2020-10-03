@@ -2,9 +2,6 @@
 
 import sys
 
-HLT = 0b00000001
-LDI = 0b10000010
-PRN = 0b01000111
 
 
 class CPU:
@@ -12,38 +9,46 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        self.registers = [0] * 8
+        self.reg = [0] * 8
         self.ram = [0] * 256
         self.pc = 0
         self.running = True
+        self.instruction = {
+            "HLT" : 0b00000001,
+            "LDI" : 0b10000010,
+            "PRN" : 0b01000111,
+        }
 
     def load(self):
         """Load a program into memory."""
 
         address = 0
-
-        # For now, we've just hardcoded a program:
-
-        program = [
-            # From print8.ls8
-            0b10000010, # LDI R0,8
-            0b00000000,
-            0b00001000,
-            0b01000111, # PRN R0
-            0b00000000,
-            0b00000001, # HLT
-        ]
-
-        for instruction in program:
-            self.ram[address] = instruction
-            address += 1
+        
+        if len(sys.argv) != 2:
+            print("no file given to run")
             
-    def ram_read(self, pc):
-        return(self.ram[self.pc])        
+        try:
+            with open(sys.argv[1]) as file:
+                program = file.readlines()
+                
+                for line in program:    
+                    code = line[:line.find("#")]
+                    if code == "":
+                        continue
+                    # print(code)
+                    num = int(code, 2)
+                    self.ram_write(num, address)
+                    address += 1
+        except FileNotFoundError:
+            print(f"could not find file {sys.argv[1]}")
+            
+    def ram_read(self, address):
+        # print(self.ram[address])
+        return self.ram[address]      
         
 
-    def ram_write(self, pc, value):
-        self.ram[self.pc] = value        
+    def ram_write(self, value, address):
+        self.ram[address] = value        
         
 
     def alu(self, op, reg_a, reg_b):
@@ -77,19 +82,37 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        # Internal Register
-        IR = self.ram[self.pc]
-        
         while self.running:
+        
+            # Internal Register
+            IR = self.ram[self.pc]
+            
             operand_a = self.ram_read(self.pc + 1)
             operand_b = self.ram_read(self.pc + 2)
             
-            if IR == LDI:
+            # load data
+            if IR == self.instruction['LDI']:
                 # do something
-                return
+                self.reg[operand_a] = operand_b
+                self.pc += 2
             
-            elif IR == HLT:
-                self.running = False
+            # print register number
+            elif IR == self.instruction['PRN']:
+                print(self.reg[operand_a])
                 self.pc += 1
-        
             
+            # Halt operation or exit()
+            elif IR == self.instruction['HLT']:
+                self.running = False
+                
+                
+            self.pc += 1
+                
+            
+            
+            
+            
+cpu = CPU()
+
+cpu.load()
+cpu.run()
