@@ -3,7 +3,6 @@
 import sys
 
 
-
 class CPU:
     """Main CPU class."""
 
@@ -11,6 +10,8 @@ class CPU:
         """Construct a new CPU."""
         self.reg = [0] * 8
         self.ram = [0] * 256
+        self.sp = 244 # stack pointer, set to F4 on initialization
+        self.reg[7] = self.sp  
         self.pc = 0 # Program Counter, address of the currently executing instruction
         self.running = True
         self.instruction = {
@@ -19,6 +20,8 @@ class CPU:
             "PRN" : 0b01000111,
             'MUL' : 0b10100010,
             'SUB' : 0b10100011,
+            'PUSH': 0b01000101,
+            'POP' : 0b01000110,
         }
 
     def load(self):
@@ -45,12 +48,26 @@ class CPU:
             print(f"could not find file {sys.argv[1]}")
             
     def ram_read(self, op):
-        # print(self.ram[address])
         return self.ram[op]      
         
 
     def ram_write(self, value, address):
-        self.ram[address] = value        
+        self.ram[address] = value   
+        
+    def pop(self, operand_a, operand_b):
+        print("POP")
+        self.reg[operand_a] = self.ram_read(self.reg[self.sp])
+        # self.reg[self.sp] += 1
+        # increment the SP
+        self.sp += 1
+        
+    def push(self, operand_a, operand_b):
+        print("PUSH", operand_a, operand_b)
+        # decrement the SP
+        self.reg[self.sp] -= 1
+        # copy the value in the given register to the address pointed to by SP
+        self.ram_write(self.reg[self.sp], self.reg[operand_a])
+        # self.pc += 2
         
 
     def alu(self, op, reg_a, reg_b):
@@ -114,7 +131,21 @@ class CPU:
                 
             elif IR == self.instruction['SUB']:
                 self.alu('SUB', operand_a, operand_b)
-                self.pc += 2
+                self.pc += 2     
+                
+            elif IR == self.instruction['POP']:
+                 # copy the value from the address pointed to by SP to the given register
+                self.reg[operand_a] = self.ram_read(self.sp)
+                # increment the SP
+                self.sp += 1
+                self.pc += 1 
+                
+            elif IR == self.instruction['PUSH']:
+                self.sp -= 1
+                # copy the value in the given register to the address pointed to by SP
+                self.ram_write(self.reg[operand_a], self.sp)
+                self.pc += 1      
+           
             
             # Halt operation or stop loop
             elif IR == self.instruction['HLT']:
@@ -123,11 +154,3 @@ class CPU:
                 
             self.pc += 1
                 
-            
-            
-            
-            
-cpu = CPU()
-
-cpu.load()
-cpu.run()
