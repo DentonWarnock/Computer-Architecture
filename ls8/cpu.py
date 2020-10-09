@@ -2,6 +2,15 @@
 
 import sys
 
+HLT = 0b00000001
+LDI = 0b10000010
+PRN = 0b01000111
+POP = 0b01000110
+PUSH = 0b01000101
+MUL = 0b10100010
+ADD = 0b10100000
+SUB = 0b10100011
+
 
 class CPU:
     """Main CPU class."""
@@ -13,14 +22,12 @@ class CPU:
         self.sp = 244 # stack pointer, set to F4 on initialization
         self.pc = 0 # Program Counter, address of the currently executing instruction
         self.running = True
-        self.instruction = {
-            "HLT" : 0b00000001,
-            "LDI" : 0b10000010,
-            "PRN" : 0b01000111,
-            'MUL' : 0b10100010,
-            'SUB' : 0b10100011,
-            'PUSH': 0b01000101,
-            'POP' : 0b01000110,
+        self.bt = {
+            HLT : self.hlt,
+            LDI : self.ldi,
+            PRN : self.prn,
+            PUSH: self.push,
+            POP : self.pop,
         }
 
     def load(self):
@@ -58,13 +65,13 @@ class CPU:
     def alu(self, op, reg_a, reg_b):
         """ALU operations."""
 
-        if op == "ADD":
+        if op == ADD:
             self.reg[reg_a] += self.reg[reg_b]
             
-        elif op == "SUB":
+        elif op == SUB:
             self.reg[reg_a] -= self.reg[reg_b]
             
-        elif op == "MUL":
+        elif op == MUL:
             self.reg[reg_a] *= self.reg[reg_b]
             
         else:
@@ -103,35 +110,34 @@ class CPU:
             num_operands = IR >> 6
             self.pc += 1 + num_operands
             
-            # load data into register
-            if IR == self.instruction['LDI']:
-                self.reg[operand_a] = operand_b
+            is_alu_op = ((IR >> 5 ) & 0b001) == 1
             
-            # print data from register
-            elif IR == self.instruction['PRN']:
-                print(self.reg[operand_a])
+            if is_alu_op:
+                self.alu(IR, operand_a, operand_b)
                 
-            elif IR == self.instruction['MUL']:
-                self.alu('MUL', operand_a, operand_b)
-                
-            elif IR == self.instruction['SUB']:
-                self.alu('SUB', operand_a, operand_b)
-                
-            elif IR == self.instruction['POP']:
-                 # copy the value from the address pointed to by SP to the given register
-                self.reg[operand_a] = self.ram_read(self.sp)
-                # increment the SP
-                self.sp += 1
-                
-            elif IR == self.instruction['PUSH']:
-                self.sp -= 1
-                # copy the value in the given register to the address pointed to by SP
-                self.ram_write(self.reg[operand_a], self.sp)
-           
+            else:
+                self.bt[IR](operand_a, operand_b)            
             
-            # Halt operation or stop loop
-            elif IR == self.instruction['HLT']:
-                self.running = False
+                
+    def hlt(self, operand_a, operand_b):
+        self.running = False
+                
+    def ldi(self, operand_a, operand_b):
+        self.reg[operand_a] = operand_b
+        
+    def prn(self, operand_a, operand_b):
+        print(self.reg[operand_a])
+        
+    def push(self, operand_a, operand_b):
+        self.sp -= 1
+        # copy the value in the given register to the address pointed to by SP
+        self.ram_write(self.reg[operand_a], self.sp)   
+
+    def pop(self, operand_a, operand_b):
+        # copy the value from the address pointed to by SP to the given register
+        self.reg[operand_a] = self.ram_read(self.sp)
+        # increment the SP
+        self.sp += 1
                 
                 
             
