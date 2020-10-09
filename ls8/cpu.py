@@ -10,6 +10,8 @@ PUSH = 0b01000101
 MUL = 0b10100010
 ADD = 0b10100000
 SUB = 0b10100011
+CALL = 0b01010000
+RET = 0b00010001
 
 
 class CPU:
@@ -28,6 +30,8 @@ class CPU:
             PRN : self.prn,
             PUSH: self.push,
             POP : self.pop,
+            CALL : self.call,
+            RET: self.ret,
         }
 
     def load(self):
@@ -100,15 +104,12 @@ class CPU:
     def run(self):
         """Run the CPU."""
         while self.running:
-        
             # Instruction Register, contains a copy of the currently executing instruction
             IR = self.ram[self.pc]
             
             operand_a = self.ram_read(self.pc + 1)
-            operand_b = self.ram_read(self.pc + 2)
+            operand_b = self.ram_read(self.pc + 2)           
             
-            num_operands = IR >> 6
-            self.pc += 1 + num_operands
             
             is_alu_op = ((IR >> 5 ) & 0b001) == 1
             
@@ -116,7 +117,13 @@ class CPU:
                 self.alu(IR, operand_a, operand_b)
                 
             else:
-                self.bt[IR](operand_a, operand_b)            
+                if IR in self.bt:
+                    self.bt[IR](operand_a, operand_b)   
+                    
+            sets_pc = (IR >> 4) & 0b00000001
+            if sets_pc == 0:
+                num_operands = IR >> 6
+                self.pc += 1 + num_operands         
             
                 
     def hlt(self, operand_a, operand_b):
@@ -138,7 +145,20 @@ class CPU:
         self.reg[operand_a] = self.ram_read(self.sp)
         # increment the SP
         self.sp += 1
-                
+        
+    def call(self, operand_a, operand_b):
+        # decrement the SP
+        self.sp -= 1
+        # write the return address to memory at the SP location
+        self.ram_write(self.pc + 2, self.sp)
+        # set PC to the address stored in the given register
+        self.pc = self.reg[self.ram[operand_a]]
+    
+    def ret(self, operand_a, operand_b):
+        # pop the value from the top of the stack and store it in the PC
+        self.pc = self.ram_read(self.sp)
+        # increment the SP
+        self.sp += 1  
                 
             
           
