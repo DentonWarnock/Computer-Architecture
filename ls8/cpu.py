@@ -11,7 +11,6 @@ class CPU:
         self.reg = [0] * 8
         self.ram = [0] * 256
         self.sp = 244 # stack pointer, set to F4 on initialization
-        self.reg[7] = self.sp  
         self.pc = 0 # Program Counter, address of the currently executing instruction
         self.running = True
         self.instruction = {
@@ -31,6 +30,7 @@ class CPU:
         
         if len(sys.argv) != 2:
             print("no file given to run")
+            sys.exit()
             
         try:
             with open(sys.argv[1]) as file:
@@ -51,23 +51,8 @@ class CPU:
         return self.ram[op]      
         
 
-    def ram_write(self, value, address):
-        self.ram[address] = value   
-        
-    def pop(self, operand_a, operand_b):
-        print("POP")
-        self.reg[operand_a] = self.ram_read(self.reg[self.sp])
-        # self.reg[self.sp] += 1
-        # increment the SP
-        self.sp += 1
-        
-    def push(self, operand_a, operand_b):
-        print("PUSH", operand_a, operand_b)
-        # decrement the SP
-        self.reg[self.sp] -= 1
-        # copy the value in the given register to the address pointed to by SP
-        self.ram_write(self.reg[self.sp], self.reg[operand_a])
-        # self.pc += 2
+    def ram_write(self, value, op):
+        self.ram[op] = value     
         
 
     def alu(self, op, reg_a, reg_b):
@@ -115,36 +100,33 @@ class CPU:
             operand_a = self.ram_read(self.pc + 1)
             operand_b = self.ram_read(self.pc + 2)
             
+            num_operands = IR >> 6
+            self.pc += 1 + num_operands
+            
             # load data into register
             if IR == self.instruction['LDI']:
                 self.reg[operand_a] = operand_b
-                self.pc += 2
             
             # print data from register
             elif IR == self.instruction['PRN']:
                 print(self.reg[operand_a])
-                self.pc += 1
                 
             elif IR == self.instruction['MUL']:
                 self.alu('MUL', operand_a, operand_b)
-                self.pc += 2
                 
             elif IR == self.instruction['SUB']:
                 self.alu('SUB', operand_a, operand_b)
-                self.pc += 2     
                 
             elif IR == self.instruction['POP']:
                  # copy the value from the address pointed to by SP to the given register
                 self.reg[operand_a] = self.ram_read(self.sp)
                 # increment the SP
                 self.sp += 1
-                self.pc += 1 
                 
             elif IR == self.instruction['PUSH']:
                 self.sp -= 1
                 # copy the value in the given register to the address pointed to by SP
                 self.ram_write(self.reg[operand_a], self.sp)
-                self.pc += 1      
            
             
             # Halt operation or stop loop
@@ -152,5 +134,6 @@ class CPU:
                 self.running = False
                 
                 
-            self.pc += 1
+            
+          
                 
