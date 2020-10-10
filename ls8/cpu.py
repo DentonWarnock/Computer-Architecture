@@ -22,6 +22,7 @@ class CPU:
         self.reg = [0] * 8
         self.ram = [0] * 256
         self.sp = 244 # stack pointer, set to F4 on initialization
+        self.reg[7] = self.sp
         self.pc = 0 # Program Counter, address of the currently executing instruction
         self.running = True
         self.bt = {
@@ -114,18 +115,18 @@ class CPU:
             is_alu_op = ((IR >> 5 ) & 0b001) == 1
             
             if is_alu_op:
-                self.alu(IR, operand_a, operand_b)
-                
+                self.alu(IR, operand_a, operand_b)                
             else:
-                if IR in self.bt:
-                    self.bt[IR](operand_a, operand_b)   
+                self.bt[IR](operand_a, operand_b)   
                     
-            sets_pc = (IR >> 4) & 0b00000001
-            if sets_pc == 0:
+            sets_pc = (IR >> 4) & 0b00000001 == 0
+            if sets_pc:
                 num_operands = IR >> 6
                 self.pc += 1 + num_operands         
             
                 
+    # bt functions            
+    
     def hlt(self, operand_a, operand_b):
         self.running = False
                 
@@ -158,7 +159,7 @@ class CPU:
         # pop the value from the top of the stack and store it in the PC
         self.pc = self.ram_read(self.sp)
         # increment the SP
-        self.sp += 1  
+        self.sp += 1
                 
             
           
