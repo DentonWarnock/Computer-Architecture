@@ -180,6 +180,11 @@ class CPU:
         self.pc = self.ram_read(self.sp)
         # increment the SP
         self.sp += 1
+        
+    def jmp(self, operand_a, operand_b):
+        # Jump to the address stored in the given register.
+        self.pc = self.reg[operand_a]
+        
                 
             
           
