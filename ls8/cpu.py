@@ -12,6 +12,10 @@ ADD = 0b10100000
 SUB = 0b10100011
 CALL = 0b01010000
 RET = 0b00010001
+CMP = 0b10100111
+JMP = 0b01010100
+JEQ = 0b01010101
+JNE = 0b01010110
 
 
 class CPU:
@@ -34,6 +38,9 @@ class CPU:
             POP : self.pop,
             CALL : self.call,
             RET: self.ret,
+            JMP: self.jmp,
+            JEQ: self.jeq,
+            JNE: self.jne,  
         }
 
     def load(self):
