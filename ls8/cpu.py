@@ -90,13 +90,13 @@ class CPU:
         elif op == CMP:
             # compare the values in reg_a and reg_b - set flags `00000LGE`
             # if reg_a less than reg_b set L flag to 1
-            if self.reg[rega] < self.reg[reg_b]:
+            if self.reg[reg_a] < self.reg[reg_b]:
                 self.fl = 0b00000100
             # if reg_a greater than reg_b set G flag to 1
-            elif self.reg[rega] > self.reg[reg_b]:
+            elif self.reg[reg_a] > self.reg[reg_b]:
                 self.fl = 0b00000010
             # else they are equal set E flag to 1
-            else self.reg[rega] == self.reg[reg_b]
+            else:
                 self.fl = 0b00000001            
             
         else:
@@ -184,6 +184,24 @@ class CPU:
     def jmp(self, operand_a, operand_b):
         # Jump to the address stored in the given register.
         self.pc = self.reg[operand_a]
+        
+    def jeq(self, operand_a, operand_b):
+        # If `equal` flag is '1', jump to the address stored in the given register.
+        equal_flag = self.fl & 0b00000001
+        if equal_flag == 1:
+            self.jmp(operand_a, operand_b)
+        else: 
+            self.pc += 2
+            
+    def jne(self, operand_a, operand_b):
+        # If `E` flag is '0', jump to the address stored in the given register.
+        equal_flag = self.fl & 0b00000001
+        if equal_flag == 0:
+            self.jmp(operand_a, operand_b)
+        else: 
+            self.pc += 2
+        
+
         
                 
             
