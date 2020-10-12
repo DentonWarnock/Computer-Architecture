@@ -12,6 +12,10 @@ ADD = 0b10100000
 SUB = 0b10100011
 CALL = 0b01010000
 RET = 0b00010001
+CMP = 0b10100111
+JMP = 0b01010100
+JEQ = 0b01010101
+JNE = 0b01010110
 
 
 class CPU:
@@ -23,6 +27,7 @@ class CPU:
         self.ram = [0] * 256
         self.sp = 244 # stack pointer, set to F4 on initialization
         self.reg[7] = self.sp
+        self.fl = 0b00000000 # Flags Register - 00000LGE
         self.pc = 0 # Program Counter, address of the currently executing instruction
         self.running = True
         self.bt = {
@@ -33,6 +38,9 @@ class CPU:
             POP : self.pop,
             CALL : self.call,
             RET: self.ret,
+            JMP: self.jmp,
+            JEQ: self.jeq,
+            JNE: self.jne,  
         }
 
     def load(self):
@@ -79,6 +87,18 @@ class CPU:
         elif op == MUL:
             self.reg[reg_a] *= self.reg[reg_b]
             
+        elif op == CMP:
+            # compare the values in reg_a and reg_b - set flags `00000LGE`
+            # if reg_a less than reg_b set L flag to 1
+            if self.reg[reg_a] < self.reg[reg_b]:
+                self.fl = 0b00000100
+            # if reg_a greater than reg_b set G flag to 1
+            elif self.reg[reg_a] > self.reg[reg_b]:
+                self.fl = 0b00000010
+            # else they are equal set E flag to 1
+            else:
+                self.fl = 0b00000001            
+            
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -90,7 +110,7 @@ class CPU:
 
         print(f"TRACE: %02X | %02X %02X %02X |" % (
             self.pc,
-            #self.fl,
+            self.fl,
             #self.ie,
             self.ram_read(self.pc),
             self.ram_read(self.pc + 1),
@@ -160,6 +180,29 @@ class CPU:
         self.pc = self.ram_read(self.sp)
         # increment the SP
         self.sp += 1
+        
+    def jmp(self, operand_a, operand_b):
+        # Jump to the address stored in the given register.
+        self.pc = self.reg[operand_a]
+        
+    def jeq(self, operand_a, operand_b):
+        # If `equal` flag is '1', jump to the address stored in the given register.
+        equal_flag = self.fl & 0b00000001
+        if equal_flag == 1:
+            self.jmp(operand_a, operand_b)
+        else: 
+            self.pc += 2
+            
+    def jne(self, operand_a, operand_b):
+        # If `E` flag is '0', jump to the address stored in the given register.
+        equal_flag = self.fl & 0b00000001
+        if equal_flag == 0:
+            self.jmp(operand_a, operand_b)
+        else: 
+            self.pc += 2
+        
+
+        
                 
             
           
